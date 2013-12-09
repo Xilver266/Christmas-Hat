@@ -6,7 +6,8 @@ Put a Christmas hat to players at spawn
 
 ## Requeriments
 
-SourceMod 1.5.0+
+SourceMod 1.5.0+<br />
+[Toggle Special FX](https://forums.alliedmods.net/showthread.php?t=163381)
 
 ## ConVars
 
