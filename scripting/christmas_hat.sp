@@ -1,10 +1,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#undef REQUIRE_PLUGIN
 #include <ToggleEffects>
-#define VERSION "1.0"
+#define VERSION "1.1"
 
-new g_Hat[MAXPLAYERS+1] = { 0, ...};
+new g_Hat[MAXPLAYERS+1];
 new bool:g_bToggleEffects = false;
 new Handle:g_hLookupAttachment = INVALID_HANDLE;
 new Handle:CvarEnable;
@@ -26,7 +27,10 @@ public OnPluginStart()
 	CreateConVar("sm_christmas_hat_version", VERSION, "Christmas Hat", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	new Handle:hGameConf = LoadGameConfigFile("hats.gamedata");
 	g_bToggleEffects = LibraryExists("ToggleEffects");
+	StartPrepSDKCall(SDKCall_Entity);
 	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "LookupAttachment");
+	PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+	PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
 	g_hLookupAttachment = EndPrepSDKCall();
 	CvarEnable = CreateConVar("sm_christmas_hat_enable", "1", "Enable Christmas hats. 0 -No | 1 -Yes", _, true, 0.0, true, 1.0);
 }
@@ -48,8 +52,21 @@ public OnMapStart()
 public Action:PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(!IsClientInGame(client) || !IsPlayerAlive(client))
+		return Plugin_Continue;
+	
+	RemoveHat(client);
+	CreateTimer(0.0, TimerCreateHats, client);
+	
+	return Plugin_Continue;
+}
+
+public Action:TimerCreateHats(Handle:timer, any:client)
+{
 	if (GetConVarBool(CvarEnable))
 		CreateHat(client);
+		
+	return Plugin_Stop;
 }
 
 CreateHat(client)
@@ -60,6 +77,7 @@ CreateHat(client)
 	if(GetClientTeam(client) == 1)
 		return;
 
+	PrintToChatAll("Creando angulos...");
 	new Float:or[3];
 	new Float:ang[3];
 	new Float:fForward[3];
@@ -83,6 +101,7 @@ CreateHat(client)
 	or[1] += fRight[1]*fOffset[0]+fForward[1]*fOffset[1]+fUp[1]*fOffset[2];
 	or[2] += fRight[2]*fOffset[0]+fForward[2]*fOffset[1]+fUp[2]*fOffset[2];
 	
+	PrintToChatAll("Creando entidad...");
 	new ent = CreateEntityByName("prop_dynamic_override");
 	DispatchKeyValue(ent, "model", "models/santahat/santahat.mdl");
 	DispatchKeyValue(ent, "spawnflags", "4");
@@ -92,10 +111,12 @@ CreateHat(client)
 	DispatchSpawn(ent);	
 	AcceptEntityInput(ent, "TurnOn", ent, ent, 0);
 	
+	PrintToChatAll("g_Hat[client] = ent");
 	g_Hat[client] = ent;
 	
+	PrintToChatAll("SDKHook(ent, SDKHook_SetTransmit, ShouldHide);");
 	SDKHook(ent, SDKHook_SetTransmit, ShouldHide);
-	
+
 	TeleportEntity(ent, or, ang, NULL_VECTOR); 
 	
 	SetVariantString("!activator");
@@ -103,18 +124,18 @@ CreateHat(client)
 	
 	SetVariantString("forward");
 	AcceptEntityInput(ent, "SetParentAttachmentMaintainOffset", ent, ent, 0);
+	PrintToChatAll("Gorro creado y posicionado");
 }
 
 public Action:PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	
-	if (g_Hat[client] != 0 && IsValidEdict(g_Hat[client]))
-	{
-		AcceptEntityInput(g_Hat[client], "Kill");
-		SDKUnhook(g_Hat[client], SDKHook_SetTransmit, ShouldHide);
-		g_Hat[client] = 0;
-	}
+	RemoveHat(client);
+}
+
+public OnClientDisconnect(client)
+{
+	RemoveHat(client);
 }
 
 public Action:ShouldHide(ent, client)
@@ -139,4 +160,14 @@ stock LookupAttachment(client, String:point[])
     if(g_hLookupAttachment==INVALID_HANDLE) return 0;
     if( client<=0 || !IsClientInGame(client) ) return 0;
     return SDKCall(g_hLookupAttachment, client, point);
+}
+
+public RemoveHat(client)
+{
+	if (g_Hat[client] != 0 && IsValidEdict(g_Hat[client]))
+	{
+		AcceptEntityInput(g_Hat[client], "Kill");
+		SDKUnhook(g_Hat[client], SDKHook_SetTransmit, ShouldHide);
+		g_Hat[client] = 0;
+	}
 }
