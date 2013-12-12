@@ -3,7 +3,7 @@
 #include <sdkhooks>
 #undef REQUIRE_PLUGIN
 #include <ToggleEffects>
-#define VERSION "1.1"
+#define VERSION "1.2"
 
 new g_Hat[MAXPLAYERS+1];
 new bool:g_bToggleEffects = false;
@@ -77,7 +77,6 @@ CreateHat(client)
 	if(GetClientTeam(client) == 1)
 		return;
 
-	PrintToChatAll("Creando angulos...");
 	new Float:or[3];
 	new Float:ang[3];
 	new Float:fForward[3];
@@ -101,7 +100,6 @@ CreateHat(client)
 	or[1] += fRight[1]*fOffset[0]+fForward[1]*fOffset[1]+fUp[1]*fOffset[2];
 	or[2] += fRight[2]*fOffset[0]+fForward[2]*fOffset[1]+fUp[2]*fOffset[2];
 	
-	PrintToChatAll("Creando entidad...");
 	new ent = CreateEntityByName("prop_dynamic_override");
 	DispatchKeyValue(ent, "model", "models/santahat/santahat.mdl");
 	DispatchKeyValue(ent, "spawnflags", "4");
@@ -111,10 +109,8 @@ CreateHat(client)
 	DispatchSpawn(ent);	
 	AcceptEntityInput(ent, "TurnOn", ent, ent, 0);
 	
-	PrintToChatAll("g_Hat[client] = ent");
 	g_Hat[client] = ent;
 	
-	PrintToChatAll("SDKHook(ent, SDKHook_SetTransmit, ShouldHide);");
 	SDKHook(ent, SDKHook_SetTransmit, ShouldHide);
 
 	TeleportEntity(ent, or, ang, NULL_VECTOR); 
@@ -124,7 +120,6 @@ CreateHat(client)
 	
 	SetVariantString("forward");
 	AcceptEntityInput(ent, "SetParentAttachmentMaintainOffset", ent, ent, 0);
-	PrintToChatAll("Gorro creado y posicionado");
 }
 
 public Action:PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
