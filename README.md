@@ -13,6 +13,10 @@ SourceMod 1.5.0+<br />
 * **sm_christmas_hat_enable** - Enable Christmas hats. 0 -No | 1 -Yes
 
 ## Changelog
+> 2013-11-12 (v1.2)
+> 
+> * Removed debug messages (xD)
+>
 > 2013-11-12 (v1.1)
 > 
 > * ToggleEffects.smx is not required now
